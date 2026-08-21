@@ -36,8 +36,10 @@ object PhotoStore {
         val resolver = context.contentResolver
 
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        resolver.openInputStream(source)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-            ?: return null
+        // decodeStream always returns null in inJustDecodeBounds mode, so the stream-open
+        // check has to happen separately rather than on decodeStream's own return value.
+        val stream = resolver.openInputStream(source) ?: return null
+        stream.use { input -> BitmapFactory.decodeStream(input, null, bounds) }
 
         val sampleSize = calculateSampleSize(bounds.outWidth, bounds.outHeight, MAX_DIMENSION)
         val decodeOptions = BitmapFactory.Options().apply { inSampleSize = sampleSize }
